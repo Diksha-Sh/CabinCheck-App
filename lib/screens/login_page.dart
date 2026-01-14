@@ -49,57 +49,161 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppColors.primary.withOpacity(0.05), Colors.white],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 500),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Welcome Back",
-                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 450),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Compact Hero Section
+                  TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 1000),
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    curve: Curves.easeOutBack,
+                    builder: (context, value, child) {
+                      return Transform.scale(
+                        scale: value,
+                        child: Opacity(
+                          opacity: value.clamp(0.0, 1.0),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Container(
+                      height: 140, // Reduced from 220
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                        borderRadius: BorderRadius.circular(32),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            right: -20,
+                            top: -20,
+                            child: Icon(Icons.cabin_rounded, size: 120, color: Colors.white.withOpacity(0.1)),
+                          ),
+                          const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.door_front_door_rounded, size: 48, color: Colors.white),
+                                SizedBox(height: 8),
+                                Text(
+                                  "CabinCheck",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      "Please sign in to your account",
-                      style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  // Welcome Text
+                  TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 800),
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    curve: Curves.easeOut,
+                    builder: (context, value, child) {
+                      return Transform.translate(
+                        offset: Offset(0, 20 * (1 - value)),
+                        child: Opacity(
+                          opacity: value,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Column(
+                      children: [
+                        const Text(
+                          "Welcome to CabinCheck",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 32, 
+                            fontWeight: FontWeight.w900, 
+                            color: AppColors.textPrimary,
+                            letterSpacing: -1,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          "Your campus, simplified. Sign in to continue.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 16, 
+                            color: AppColors.textSecondary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 32),
-                    ModernCard(
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Role Switcher & Form
+                  TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 1200),
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    curve: Curves.easeOut,
+                    builder: (context, value, child) {
+                      return Transform.translate(
+                        offset: Offset(0, 40 * (1 - value)),
+                        child: Opacity(
+                          opacity: value,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: ModernCard(
+                      padding: const EdgeInsets.all(28),
                       child: Form(
                         key: _formKey,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _RoleChip(
-                                    label: "Faculty",
-                                    selected: role == "Faculty",
-                                    onSelected: () => setState(() => role = "Faculty"),
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: _RoleChip(
+                                      label: "Faculty",
+                                      selected: role == "Faculty",
+                                      onSelected: () => setState(() => role = "Faculty"),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _RoleChip(
-                                    label: "Student",
-                                    selected: role == "Student",
-                                    onSelected: () => setState(() => role = "Student"),
+                                  Expanded(
+                                    child: _RoleChip(
+                                      label: "Student",
+                                      selected: role == "Student",
+                                      onSelected: () => setState(() => role = "Student"),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                             const SizedBox(height: 32),
                             TextFormField(
@@ -107,7 +211,8 @@ class _LoginPageState extends State<LoginPage> {
                               keyboardType: TextInputType.emailAddress,
                               decoration: const InputDecoration(
                                 labelText: "Email Address",
-                                prefixIcon: Icon(Icons.email_outlined),
+                                prefixIcon: Icon(Icons.email_outlined, size: 22),
+                                hintText: "Enter your university email",
                               ),
                               validator: (v) => v != null && v.contains('@') ? null : "Invalid email",
                             ),
@@ -117,7 +222,8 @@ class _LoginPageState extends State<LoginPage> {
                               keyboardType: TextInputType.phone,
                               decoration: const InputDecoration(
                                 labelText: "Phone Number",
-                                prefixIcon: Icon(Icons.phone_outlined),
+                                prefixIcon: Icon(Icons.phone_outlined, size: 22),
+                                hintText: "Enter your contact number",
                               ),
                               validator: (v) => v != null && v.length >= 10 ? null : "Invalid phone",
                             ),
@@ -126,17 +232,18 @@ class _LoginPageState extends State<LoginPage> {
                               controller: idController,
                               decoration: InputDecoration(
                                 labelText: role == "Faculty" ? "Faculty ID" : "Student ID",
-                                prefixIcon: const Icon(Icons.badge_outlined),
+                                prefixIcon: const Icon(Icons.badge_outlined, size: 22),
+                                hintText: role == "Faculty" ? "e.g. FAC-123" : "e.g. STU-456",
                               ),
                               validator: (v) => v != null && v.isNotEmpty ? null : "Required",
                             ),
                             const SizedBox(height: 32),
                             GradientButton(
-                              label: "Continue",
+                              label: "Get Started",
                               onPressed: _attemptLogin,
                               icon: Icons.arrow_forward_rounded,
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 20),
                             TextButton(
                               onPressed: () {
                                 setState(() {
@@ -151,14 +258,21 @@ class _LoginPageState extends State<LoginPage> {
                                   }
                                 });
                               },
-                              child: const Text("Fill with demo data"),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: const Text(
+                                "Fill with demo data",
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),

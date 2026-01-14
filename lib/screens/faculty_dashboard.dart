@@ -21,9 +21,25 @@ class _FacultyDashboardState extends State<FacultyDashboard> {
   final TextEditingController morningController = TextEditingController();
   final TextEditingController eveningController = TextEditingController();
   final TextEditingController vibeController = TextEditingController();
-  final TextEditingController latController = TextEditingController();
-  final TextEditingController lngController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController linkController = TextEditingController();
   String selectedEmoji = "☕";
+  
+  @override
+  void dispose() {
+    nameController.dispose();
+    deptController.dispose();
+    cabinController.dispose();
+    messageController.dispose();
+    morningController.dispose();
+    eveningController.dispose();
+    vibeController.dispose();
+    phoneController.dispose();
+    emailController.dispose();
+    linkController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -36,8 +52,9 @@ class _FacultyDashboardState extends State<FacultyDashboard> {
     morningController.text = state.officeHours["Morning"] ?? "";
     eveningController.text = state.officeHours["Evening"] ?? "";
     vibeController.text = state.facultyVibe;
-    latController.text = state.cabinLat.toString();
-    lngController.text = state.cabinLng.toString();
+    phoneController.text = state.facultyPhone;
+    emailController.text = state.facultyEmail;
+    linkController.text = state.facultyOfficeLink;
     selectedEmoji = state.statusEmoji;
   }
 
@@ -57,15 +74,22 @@ class _FacultyDashboardState extends State<FacultyDashboard> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text("Faculty Dashboard", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        scrolledUnderElevation: 0,
+        actions: const [
+          ThemeSelector(),
+          SizedBox(width: 8),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (state.currentStatus.availability == FacultyAvailability.emergency) ...[
+              const SOSAlert(message: "EMERGENCY PROTOCOL ACTIVE. Student communication restricted."),
+              const SizedBox(height: 24),
+            ],
             if (state.buzzCount > 0) _buildBuzzAlert(state),
             if (state.buzzCount > 0) const SizedBox(height: 16),
             _buildStatusHeader(state),
@@ -75,6 +99,12 @@ class _FacultyDashboardState extends State<FacultyDashboard> {
             if (state.studentQueue.isNotEmpty) _buildQueueSection(state),
             if (state.studentQueue.isNotEmpty) const SizedBox(height: 24),
             _buildActivitySection(state),
+            const SizedBox(height: 24),
+            _buildPeakInsights(state),
+            const SizedBox(height: 24),
+            _buildMessagesSection(state),
+            const SizedBox(height: 24),
+            _buildDynamicScheduleEditor(state),
             const SizedBox(height: 24),
             _buildProfileSection(state),
             const SizedBox(height: 24),
@@ -248,47 +278,131 @@ class _FacultyDashboardState extends State<FacultyDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Recent Activity (15 Days)", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 20),
-          SizedBox(
-            height: 100,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: 15,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final date = DateTime.now().subtract(Duration(days: 14 - index));
-                final dayStatusCount = state.statusHistory.where((dt) => 
-                  dt.day == date.day && dt.month == date.month && dt.year == date.year).length;
-                
-                return Column(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        width: 32,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1 + (dayStatusCount * 0.2).clamp(0, 0.9)),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text("${date.day}", style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                  ],
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 20),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(Icons.auto_graph, color: AppColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                "Typical Availability: ${state.predictedTime}",
-                style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+              const Text("Presence Analytics", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                child: const Row(
+                  children: [
+                    Icon(Icons.verified_user_rounded, color: Colors.blue, size: 12),
+                    SizedBox(width: 4),
+                    Text("Reliability: 98%", style: TextStyle(color: Colors.blue, fontSize: 10, fontWeight: FontWeight.bold)),
+                  ],
+                ),
               ),
             ],
+          ),
+          const SizedBox(height: 24),
+          const Text("LAST 24 HOURS STATUS CHANGES", 
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+          const SizedBox(height: 20),
+          TimelineItem(
+            time: "10:30 AM",
+            status: "Entered Cabin",
+            color: Colors.green,
+          ),
+          TimelineItem(
+            time: "12:45 PM",
+            status: "Meeting with Dean",
+            color: Colors.amber,
+          ),
+          TimelineItem(
+            time: "02:15 PM",
+            status: "Back in Cabin",
+            color: Colors.green,
+          ),
+          TimelineItem(
+            time: "04:00 PM",
+            status: "Left for Lab",
+            color: Colors.red,
+            isLast: true,
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.auto_graph_rounded, color: AppColors.primary, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Availability Insight", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                      Text("You are most active between 09:00 AM - 12:00 PM.", 
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeakInsights(AppState state) {
+    return ModernCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Peak Activity Detection", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 20),
+          const Text("STUDENT BUZZ HEATMAP", 
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(8, (index) {
+              const hours = ["09", "10", "11", "12", "01", "02", "03", "04"];
+              const intensity = [0.2, 0.4, 0.9, 0.6, 0.1, 0.3, 0.7, 0.5];
+              return Column(
+                children: [
+                  Container(
+                    width: 30,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(intensity[index]),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: intensity[index] > 0.8 
+                        ? const Center(child: Icon(Icons.flash_on, color: Colors.white, size: 12)) 
+                        : null,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(hours[index], style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                ],
+              );
+            }),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.amber.withOpacity(0.1)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.lightbulb_outline_rounded, color: Colors.amber, size: 18),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    "Insight: You get 40% more buzzes between 11:00 AM - 12:00 PM. Consider keeping office hours then.",
+                    style: TextStyle(fontSize: 11, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -343,6 +457,38 @@ class _FacultyDashboardState extends State<FacultyDashboard> {
             ),
           ),
           const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(
+                    labelText: "Phone Number",
+                    prefixIcon: Icon(Icons.phone_outlined),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: "Email ID",
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: linkController,
+            decoration: const InputDecoration(
+              labelText: "Office/Profile Link",
+              prefixIcon: Icon(Icons.link_outlined),
+            ),
+          ),
+          const SizedBox(height: 16),
           const Text("Status Emoji", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
           const SizedBox(height: 8),
           Row(
@@ -359,32 +505,6 @@ class _FacultyDashboardState extends State<FacultyDashboard> {
                 child: Text(emoji, style: const TextStyle(fontSize: 24)),
               ),
             )).toList(),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: latController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: "Latitude",
-                    prefixIcon: Icon(Icons.map_outlined),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: lngController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: "Longitude",
-                    prefixIcon: Icon(Icons.map_outlined),
-                  ),
-                ),
-              ),
-            ],
           ),
           const SizedBox(height: 16),
           Row(
@@ -440,8 +560,9 @@ class _FacultyDashboardState extends State<FacultyDashboard> {
                       },
                       vibe: vibeController.text,
                       emoji: selectedEmoji,
-                      lat: double.tryParse(latController.text),
-                      lng: double.tryParse(lngController.text),
+                      phone: phoneController.text,
+                      email: emailController.text,
+                      link: linkController.text,
                     );
                     debugPrint("Profile updated successfully");
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -457,25 +578,288 @@ class _FacultyDashboardState extends State<FacultyDashboard> {
     );
   }
 
-  Widget _buildStudentRequestAlert(AppState state) {
+  Widget _buildDynamicScheduleEditor(AppState state) {
     return ModernCard(
-      color: Colors.indigo.shade50,
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.mail_outline, color: AppColors.primary, size: 32),
-          const SizedBox(width: 16),
-          Expanded(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Weekly Schedule & Location", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              IconButton(
+                onPressed: () => _showAddSlotDialog(state),
+                icon: const Icon(Icons.add_circle, color: AppColors.primary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          DefaultTabController(
+            length: 5,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Student Request", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                Text("Received at ${state.lastStudentRequestTime}", style: const TextStyle(color: AppColors.textSecondary)),
+                const TabBar(
+                  isScrollable: true,
+                  tabs: [
+                    Tab(text: "Mon"),
+                    Tab(text: "Tue"),
+                    Tab(text: "Wed"),
+                    Tab(text: "Thu"),
+                    Tab(text: "Fri"),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 300,
+                  child: TabBarView(
+                    children: [
+                      _buildDayList(state, "Monday"),
+                      _buildDayList(state, "Tuesday"),
+                      _buildDayList(state, "Wednesday"),
+                      _buildDayList(state, "Thursday"),
+                      _buildDayList(state, "Friday"),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
-          TextButton(
-            onPressed: () => state.respondToStudent("10 minutes"),
-            child: const Text("Respond"),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDayList(AppState state, String day) {
+    final slots = state.weeklySchedule[day] ?? [];
+    if (slots.isEmpty) {
+      return const Center(child: Text("No slots added for this day", style: TextStyle(color: AppColors.textSecondary)));
+    }
+    return ListView.separated(
+      itemCount: slots.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final slot = slots[index];
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: Text(slot["time"]!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              ),
+              Expanded(
+                flex: 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(slot["task"]!, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Text(slot["location"]!, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 20, color: Colors.blue),
+                onPressed: () => _showEditSlotDialog(state, day, index, slot),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                onPressed: () => state.removeScheduleSlot(day, index),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAddSlotDialog(AppState state) {
+    final timeC = TextEditingController();
+    final taskC = TextEditingController();
+    final locC = TextEditingController();
+    String selectedDay = "Monday";
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text("Add Schedule Slot"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButton<String>(
+                  value: selectedDay,
+                  isExpanded: true,
+                  items: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+                      .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                      .toList(),
+                  onChanged: (v) => setDialogState(() => selectedDay = v!),
+                ),
+                TextField(controller: timeC, decoration: const InputDecoration(labelText: "Time (e.g. 09:00 - 10:00)")),
+                TextField(controller: taskC, decoration: const InputDecoration(labelText: "Task (e.g. Class L1)")),
+                TextField(controller: locC, decoration: const InputDecoration(labelText: "Location (e.g. Gallery 1)")),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+            ElevatedButton(
+              onPressed: () {
+                state.addScheduleSlot(selectedDay, timeC.text, taskC.text, locC.text);
+                Navigator.pop(context);
+              },
+              child: const Text("Add"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditSlotDialog(AppState state, String day, int index, Map<String, String> slot) {
+    final taskC = TextEditingController(text: slot["task"]);
+    final locC = TextEditingController(text: slot["location"]);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Edit Slot"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("Day: $day | Time: ${slot["time"]}", style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            TextField(controller: taskC, decoration: const InputDecoration(labelText: "Task")),
+            TextField(controller: locC, decoration: const InputDecoration(labelText: "Location")),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () {
+              state.updateSchedule(day, index, taskC.text, locC.text);
+              Navigator.pop(context);
+            },
+            child: const Text("Save"),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
+  Widget _buildMessagesSection(AppState state) {
+    return ModernCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Student Messages", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              if (state.studentMessages.any((m) => m["reply"] == null))
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(12)),
+                  child: const Text("New", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (state.studentMessages.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(child: Text("No messages yet", style: TextStyle(color: AppColors.textSecondary))),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: state.studentMessages.length,
+              separatorBuilder: (_, __) => const Divider(height: 24),
+              itemBuilder: (context, index) {
+                final msg = state.studentMessages[index];
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(msg["sender"], style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+                        Text(msg["time"], style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(msg["content"], style: const TextStyle(fontSize: 14)),
+                    if (msg["reply"] != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text("Your Reply", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green)),
+                            const SizedBox(height: 4),
+                            Text(msg["reply"], style: const TextStyle(fontSize: 13, fontStyle: FontStyle.italic)),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.reply, size: 18),
+                        label: const Text("Reply"),
+                        onPressed: () => _showReplyDialog(context, state, index),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showReplyDialog(BuildContext context, AppState state, int index) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Reply to Student"),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: "Type your reply...",
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                state.replyToStudentMessage(index, controller.text);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text("Send Reply"),
           ),
         ],
       ),
@@ -508,16 +892,24 @@ class _StatusButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: Container(
         width: (MediaQuery.of(context).size.width - 96) / 2,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade200),
+          color: color.withOpacity(0.03),
+          border: Border.all(color: color.withOpacity(0.1)),
           borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: color.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+          ],
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 12),
+            Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: color.withOpacity(0.8))),
           ],
         ),
       ),

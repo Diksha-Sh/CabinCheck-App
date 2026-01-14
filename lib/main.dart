@@ -22,10 +22,13 @@ class CabinCheckApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final state = Provider.of<AppState>(context);
     return MaterialApp(
       title: 'CabinCheck',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: state.themeMode,
       home: const LoginPage(),
     );
   }

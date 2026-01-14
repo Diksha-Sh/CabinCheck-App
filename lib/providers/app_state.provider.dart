@@ -10,19 +10,31 @@ class AppState extends ChangeNotifier {
   String facultyName = "Dr. Shweta Varma";
   String department = "Computer Science & Engineering";
   String cabinInfo = "Block B – 2nd Floor – Cabin 214";
+  String facultyPhone = "+91 98765 43210";
+  String facultyEmail = "shweta.varma@university.edu";
+  String facultyOfficeLink = "https://university.edu/faculty/shweta";
   String? facultyMessage;
   XFile? timetableImage;
   
   String? lastStudentRequestTime;
   List<String> studentQueue = [];
+  List<Map<String, dynamic>> studentMessages = [];
   int buzzCount = 0;
   List<String> buzzHistory = [];
+  bool isFollowing = false;
+  String? notificationMessage;
   
   DateTime? meetingEndTime;
   Timer? _meetingSyncTimer;
 
-  double cabinLat = 12.9716; // Default Bangalore (example)
-  double cabinLng = 77.5946;
+  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode get themeMode => _themeMode;
+
+  void setThemeMode(ThemeMode mode) {
+    _themeMode = mode;
+    notifyListeners();
+  }
+
   String facultyVibe = "🚀 Ready to help!";
   String statusEmoji = "☕";
 
@@ -31,12 +43,28 @@ class AppState extends ChangeNotifier {
     "Evening": "03:30 PM – 04:30 PM",
   };
   
-  Map<String, String> timetable = {
-    "Monday": "10:00 – 11:00",
-    "Tuesday": "11:00 – 12:00",
-    "Wednesday": "09:00 – 10:00",
-    "Thursday": "14:00 – 15:00",
-    "Friday": "10:00 – 11:00"
+  Map<String, List<Map<String, String>>> weeklySchedule = {
+    "Monday": [
+      {"time": "09:00 – 10:00", "task": "L1 Class", "location": "Gallery 1"},
+      {"time": "10:00 – 11:00", "task": "Office Hours", "location": "Cabin"},
+      {"time": "14:00 – 15:00", "task": "L2 Class", "location": "Gallery 4"},
+    ],
+    "Tuesday": [
+      {"time": "11:00 – 12:00", "task": "Meeting", "location": "Dept Office"},
+      {"time": "14:00 – 15:00", "task": "L3 Class", "location": "Gallery 1"},
+    ],
+    "Wednesday": [
+      {"time": "09:00 – 10:00", "task": "Office Hours", "location": "Cabin"},
+      {"time": "10:00 – 12:00", "task": "Lab Session", "location": "Computing Lab 2"},
+    ],
+    "Thursday": [
+      {"time": "14:00 – 15:00", "task": "L1 Class", "location": "Gallery 1"},
+      {"time": "15:00 – 16:00", "task": "Office Hours", "location": "Cabin"},
+    ],
+    "Friday": [
+      {"time": "10:00 – 11:00", "task": "Seminars", "location": "Auditorium"},
+      {"time": "11:00 – 12:00", "task": "Office Hours", "location": "Cabin"},
+    ]
   };
 
   List<DateTime> statusHistory = [];
@@ -45,6 +73,8 @@ class AppState extends ChangeNotifier {
   AppState();
 
   void updateStatus(FacultyAvailability availability, String label, {String? message, String? returnTime}) {
+    final wasBusy = _currentStatus.availability != FacultyAvailability.inCabin;
+    
     _currentStatus = FacultyStatusDetails(
       availability: availability,
       label: label,
@@ -57,8 +87,24 @@ class AppState extends ChangeNotifier {
       statusHistory.insert(0, DateTime.now());
       _limitHistory();
     }
+
+    // Smart Notification Logic
+    if (isFollowing && wasBusy && availability == FacultyAvailability.inCabin) {
+      notificationMessage = "Faculty $facultyName is now available in Cabin!";
+      // In a real app, this would be a local push notification.
+    }
     
     _cancelTimer();
+    notifyListeners();
+  }
+
+  void toggleFollow() {
+    isFollowing = !isFollowing;
+    notifyListeners();
+  }
+
+  void clearNotification() {
+    notificationMessage = null;
     notifyListeners();
   }
 
@@ -85,6 +131,25 @@ class AppState extends ChangeNotifier {
     buzzHistory.insert(0, "${_formatTime(DateTime.now())} - $studentName [$mood]");
     if (buzzHistory.length > 5) buzzHistory.removeLast();
     notifyListeners();
+  }
+
+  void sendStudentMessage(String studentName, String content) {
+    studentMessages.insert(0, {
+      "sender": studentName,
+      "content": content,
+      "time": _formatTime(DateTime.now()),
+      "reply": null,
+      "replyTime": null,
+    });
+    notifyListeners();
+  }
+
+  void replyToStudentMessage(int index, String reply) {
+    if (index >= 0 && index < studentMessages.length) {
+      studentMessages[index]["reply"] = reply;
+      studentMessages[index]["replyTime"] = _formatTime(DateTime.now());
+      notifyListeners();
+    }
   }
 
   void clearBuzzes() {
@@ -137,10 +202,12 @@ class AppState extends ChangeNotifier {
     if (meetingEndTime == null) return "00:00";
     final diff = meetingEndTime!.difference(DateTime.now());
     if (diff.isNegative) return "00:00";
-    return "${diff.inMinutes}:${(diff.inSeconds % 60).toString().padLeft(2, '0')}";
+    final minutes = diff.inMinutes;
+    final seconds = diff.inSeconds % 60;
+    return "${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}";
   }
 
-  void updateProfile({String? name, String? dept, String? cabin, String? message, XFile? image, Map<String, String>? hours, String? vibe, String? emoji, double? lat, double? lng}) {
+  void updateProfile({String? name, String? dept, String? cabin, String? message, XFile? image, Map<String, String>? hours, String? vibe, String? emoji, String? phone, String? email, String? link}) {
     if (name != null) facultyName = name;
     if (dept != null) department = dept;
     if (cabin != null) cabinInfo = cabin;
@@ -149,9 +216,31 @@ class AppState extends ChangeNotifier {
     if (hours != null) officeHours = hours;
     if (vibe != null) facultyVibe = vibe;
     if (emoji != null) statusEmoji = emoji;
-    if (lat != null) cabinLat = lat;
-    if (lng != null) cabinLng = lng;
+    if (phone != null) facultyPhone = phone;
+    if (email != null) facultyEmail = email;
+    if (link != null) facultyOfficeLink = link;
     notifyListeners();
+  }
+
+  void updateSchedule(String day, int index, String task, String location) {
+    if (weeklySchedule.containsKey(day) && index < weeklySchedule[day]!.length) {
+      weeklySchedule[day]![index]["task"] = task;
+      weeklySchedule[day]![index]["location"] = location;
+      notifyListeners();
+    }
+  }
+
+  void addScheduleSlot(String day, String time, String task, String location) {
+    weeklySchedule[day] ??= [];
+    weeklySchedule[day]!.add({"time": time, "task": task, "location": location});
+    notifyListeners();
+  }
+
+  void removeScheduleSlot(String day, int index) {
+    if (weeklySchedule.containsKey(day) && index < weeklySchedule[day]!.length) {
+      weeklySchedule[day]!.removeAt(index);
+      notifyListeners();
+    }
   }
 
   void _limitHistory() {
@@ -187,6 +276,7 @@ class AppState extends ChangeNotifier {
   @override
   void dispose() {
     _autoResetTimer?.cancel();
+    _meetingSyncTimer?.cancel();
     super.dispose();
   }
 }

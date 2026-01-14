@@ -405,6 +405,21 @@ class StudentDashboard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
+          if (state.timetableImage != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.file(
+                File(state.timetableImage!.path),
+                width: double.infinity,
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 16),
+            const Text("Detailed Schedule", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textSecondary)),
+            const SizedBox(height: 12),
+          ],
           ...state.weeklySchedule.entries.map((dayEntry) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 16),

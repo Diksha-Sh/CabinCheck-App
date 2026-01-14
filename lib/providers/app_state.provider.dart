@@ -207,12 +207,16 @@ class AppState extends ChangeNotifier {
     return "${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}";
   }
 
-  void updateProfile({String? name, String? dept, String? cabin, String? message, XFile? image, Map<String, String>? hours, String? vibe, String? emoji, String? phone, String? email, String? link}) {
+  void updateProfile({String? name, String? dept, String? cabin, String? message, XFile? image, bool clearImage = false, Map<String, String>? hours, String? vibe, String? emoji, String? phone, String? email, String? link}) {
     if (name != null) facultyName = name;
     if (dept != null) department = dept;
     if (cabin != null) cabinInfo = cabin;
     if (message != null) facultyMessage = message;
-    if (image != null) timetableImage = image;
+    if (clearImage) {
+      timetableImage = null;
+    } else if (image != null) {
+      timetableImage = image;
+    }
     if (hours != null) officeHours = hours;
     if (vibe != null) facultyVibe = vibe;
     if (emoji != null) statusEmoji = emoji;
